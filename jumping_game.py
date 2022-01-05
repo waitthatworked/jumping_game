@@ -18,6 +18,22 @@ green = (0, 255, 0)
 blue = (0, 0, 255)
 white = (255, 255, 255)
 
+# Player sprites
+walkRight = [pygame.image.load('sprites/R1.png'), 
+pygame.image.load('sprites/R2.png'), pygame.image.load('sprites/R3.png'), 
+pygame.image.load('sprites/R4.png'), pygame.image.load('sprites/R5.png'), 
+pygame.image.load('sprites/R6.png'), pygame.image.load('sprites/R7.png'), 
+pygame.image.load('sprites/R8.png'),pygame.image.load('sprites/R9.png')]
+
+walkLeft = [pygame.image.load('sprites/L1.png'),
+pygame.image.load('sprites/L2.png'), pygame.image.load('sprites/L3.png'),
+pygame.image.load('sprites/L4.png'), pygame.image.load('sprites/L5.png'),
+pygame.image.load('sprites/L6.png'), pygame.image.load('sprites/L7.png'),
+pygame.image.load('sprites/L8.png'), pygame.image.load('sprites/L9.png')]
+
+bg = pygame.image.load('sprites/bg.jpg')
+char = pygame.image.load('sprites/standing.png')
+
 pygame.display.set_caption("Jumping Game")
 
 x = 50
