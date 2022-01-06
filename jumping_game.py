@@ -23,7 +23,7 @@ walkRight = [pygame.image.load('sprites/R1.png'),
 pygame.image.load('sprites/R2.png'), pygame.image.load('sprites/R3.png'), 
 pygame.image.load('sprites/R4.png'), pygame.image.load('sprites/R5.png'), 
 pygame.image.load('sprites/R6.png'), pygame.image.load('sprites/R7.png'), 
-pygame.image.load('sprites/R8.png'),pygame.image.load('sprites/R9.png')]
+pygame.image.load('sprites/R8.png'), pygame.image.load('sprites/R9.png')]
 
 walkLeft = [pygame.image.load('sprites/L1.png'),
 pygame.image.load('sprites/L2.png'), pygame.image.load('sprites/L3.png'),
@@ -41,13 +41,19 @@ y = 50
 width = 40
 height = 60
 vel = 15
-gravity = 10
+
+# Jumping variables
+
+gravity = 0.5
 isJump = False
 jumpCount = 10
+timeDelay = 50 #milliseconds
+touchingSurface = True
+timer = 0
 
 run = True
 while run:
-    pygame.time.delay(50)
+    pygame.time.delay(timeDelay)
 
     # if y < WIN_HEIGHT - height:
     #     y += gravity
@@ -63,23 +69,47 @@ while run:
         x -= vel
     if keys[pygame.K_RIGHT] and x < WIN_WIDTH - width:
         x += vel
+
+    # Tech with Tim's Strange Jumping Code:    
+    # if not(isJump):
+    #     if keys[pygame.K_UP] and y > 0:
+    #         y -= vel
+    #     if keys[pygame.K_DOWN] and y < WIN_HEIGHT - height:
+    #         y += vel
+    #     if keys[pygame.K_SPACE]:
+    #         isJump = True
+    # else:
+    #     if jumpCount >= -10:
+    #         neg = 1
+    #         if jumpCount < 0:
+    #             neg = -1
+    #         y -= (jumpCount ** 2) * 0.7 * neg
+    #         jumpCount -= 1
+    #     else:
+    #         isJump = False
+    #         jumpCount = 10
+
+    # My jumping code:
     if not(isJump):
         if keys[pygame.K_UP] and y > 0:
             y -= vel
         if keys[pygame.K_DOWN] and y < WIN_HEIGHT - height:
             y += vel
-        if keys[pygame.K_SPACE]:
+        if keys[pygame.K_SPACE] and touchingSurface:
             isJump = True
+            vel_y = 20
+            touchingSurface = False
+            timer = 0
+
     else:
-        if jumpCount >= -10:
-            neg = 1
-            if jumpCount < 0:
-                neg = -1
-            y -= (jumpCount ** 2) * 0.7 * neg
-            jumpCount -= 1
-        else:
+        vel_y = 100 - (gravity * (timeDelay * timer))
+        y -= vel_y
+        timer += 1
+        
+        if y > WIN_HEIGHT - 2*height:
             isJump = False
-            jumpCount = 10
+            touchingSurface = True
+            y = WIN_HEIGHT - height
 
     win.fill(black)
 
