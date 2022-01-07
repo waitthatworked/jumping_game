@@ -14,13 +14,14 @@ win = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
 # Colours
 black = (0, 0, 0)
 red = (255, 0, 0)
+pink = (255, 100, 100)
 green = (0, 255, 0)
 blue = (0, 0, 255)
 white = (255, 255, 255)
 
 # Jumping variables
 ground = WIN_HEIGHT - 80
-gravity = 0.5
+gravity = 10
 timeDelay = 50 #milliseconds
 timer = 0
 
@@ -40,7 +41,7 @@ pygame.image.load('sprites/L8.png'), pygame.image.load('sprites/L9.png')]
 bg = pygame.image.load('sprites/bg.jpg')
 char = pygame.image.load('sprites/standing.png')
 
-pygame.display.set_caption("Jumping Game")
+pygame.display.set_caption("Worm's Revenge")
 
 # Variables
 clock = pygame.time.Clock()
@@ -56,35 +57,59 @@ class player(object):
         self.vel = 5
         self.walkCount = 0
         self.left = False
-        self.right = False
+        self.right = True
+        self.standing = True
 
         # Jumping Variables
         self.isJump = False
         self.touchingSurface = True
         self.jumpTimer = 0
 
+    # draws the player
     def draw(self, win):
         if self.walkCount + 1 >= 27:
             self.walkCount = 0
 
-        if self.left:
-            win.blit(walkLeft[self.walkCount//3], (self.x, self.y))
-            self.walkCount += 1
-        elif self.right:
-            win.blit(walkRight[self.walkCount//3], (self.x, self.y))
-            self.walkCount += 1
+        # Controls walking animations
+        if not(self.standing):
+            if self.left:
+                win.blit(walkLeft[self.walkCount//3], (self.x, self.y))
+                self.walkCount += 1
+            elif self.right:
+                win.blit(walkRight[self.walkCount//3], (self.x, self.y))
+                self.walkCount += 1
         else:
-            win.blit(char, (self.x, self.y))
-            self.walkCount += 1
+            if self.right:
+                win.blit(walkRight[0], (self.x, self.y))
+            else: 
+                win.blit(walkLeft[0], (self.x, self.y))
+
+# class for bullets
+class projectile(object):
+    def __init__(self, x, y, radius, color, facing):
+        self.x = x
+        self.y = y
+        self.radius = radius
+        self.color = color
+        self.facing = facing
+        self.vel = 8 * facing
+
+    # draws the projectile
+    def draw(self, win):
+        pygame.draw.circle(win, self.color, (self.x, self.y), self.radius)
 
 # Redraws the game window when called
 def redrawGameWindow():
     win.blit(bg, (0, 0))
     worm.draw(win)
+    for bullet in bullets:
+        bullet.draw(win)
+
     pygame.display.update()
 
 # Main Loop:
 worm = player(WIN_WIDTH/3, ground, 64, 64)
+bullets = []
 run = True
 while run:
     clock.tick(27)
@@ -94,37 +119,61 @@ while run:
         if event.type == pygame.QUIT:
             run = False
 
+    # If a bullet goes offscreen, player can shoot more bullets
+    for bullet in bullets:
+        if bullet.x < WIN_WIDTH and bullet.x > 0:
+            bullet.x += bullet.vel
+        else: 
+            bullets.pop(bullets.index(bullet))
+
+    # Use keyboard inputs to control movement
     keys = pygame.key.get_pressed()
 
+    # Code for shooting bullets
+    if keys[pygame.K_SPACE]:
+        # Which way the worm is facing
+        if worm.left:
+            facing = -1
+        else:
+            facing = 1
+
+        # Caps the number of bullets
+        if len(bullets) < 20:
+            bullets.append(projectile(round(worm.x + worm.width //2), round(worm.y + worm.height//2), 6, pink, facing))
+
+    # Leftward Movement
     if keys[pygame.K_LEFT] and worm.x > 0:
         worm.x -= worm.vel
         worm.left = True
         worm.right = False
+        worm.standing = False
+    # Rightward Movement
     elif keys[pygame.K_RIGHT] and worm.x < WIN_WIDTH - worm.width:
         worm.x += worm.vel
         worm.left = False
         worm.right = True
+        worm.standing = False
+    # Standing
     else:
-        worm.right = False
-        worm.left = False
+        worm.standing = True
         worm.walkCount = 0
 
     # My jumping code:
     if not(worm.isJump):
-        if keys[pygame.K_SPACE] and worm.touchingSurface:
+        if keys[pygame.K_UP] and worm.touchingSurface:
             worm.isJump = True
-            worm.right = False
-            worm.left = False
             worm.walkCount = 0
             
+            # Important variables for jumping
             worm.touchingSurface = False
             worm.jumpTimer = 0
     else:
         # v = u + at
-        vel_y = 100 - (gravity * (timeDelay * worm.jumpTimer))
+        vel_y = 40 - (gravity * (worm.jumpTimer))
         worm.y -= vel_y
-        worm.jumpTimer += 1
+        worm.jumpTimer += 0.5
         
+        # If the worm is on/past the ground
         if worm.y >= ground:
             worm.y = ground
             worm.isJump = False
@@ -134,7 +183,7 @@ while run:
 
 pygame.quit()
 
-    # Tech with Tim's Strange Jumping Code:    
+    # Tim's Strange Jumping Code:    
     # if not(isJump):
     #     if keys[pygame.K_UP] and y > 0:
     #         y -= vel
