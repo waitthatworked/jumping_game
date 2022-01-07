@@ -6,8 +6,8 @@ import pygame
 
 pygame.init()
 
-WIN_HEIGHT = 480
-WIN_WIDTH = 500
+WIN_HEIGHT = 420
+WIN_WIDTH = 740
 
 win = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
 
@@ -38,7 +38,7 @@ pygame.image.load('sprites/L4.png'), pygame.image.load('sprites/L5.png'),
 pygame.image.load('sprites/L6.png'), pygame.image.load('sprites/L7.png'),
 pygame.image.load('sprites/L8.png'), pygame.image.load('sprites/L9.png')]
 
-bg = pygame.image.load('sprites/bg.jpg')
+bg = pygame.image.load('sprites/moon_small.png')
 char = pygame.image.load('sprites/standing.png')
 
 pygame.display.set_caption("Worm's Revenge")
@@ -84,6 +84,56 @@ class player(object):
             else: 
                 win.blit(walkLeft[0], (self.x, self.y))
 
+class enemy(object):
+    walkRight = [pygame.image.load('sprites/R1E.png'),
+    pygame.image.load('sprites/R2E.png'), pygame.image.load('sprites/R3E.png'),
+    pygame.image.load('sprites/R4E.png'), pygame.image.load('sprites/R5E.png'),
+    pygame.image.load('sprites/R6E.png'), pygame.image.load('sprites/R7E.png'), 
+    pygame.image.load('sprites/R8E.png'), pygame.image.load('sprites/R9E.png'), 
+    pygame.image.load('sprites/R10E.png'), pygame.image.load('sprites/R11E.png')]
+    walkLeft = [pygame.image.load('sprites/L1E.png'), 
+    pygame.image.load('sprites/L2E.png'), pygame.image.load('sprites/L3E.png'), 
+    pygame.image.load('sprites/L4E.png'), pygame.image.load('sprites/L5E.png'), 
+    pygame.image.load('sprites/L6E.png'), pygame.image.load('sprites/L7E.png'), 
+    pygame.image.load('sprites/L8E.png'), pygame.image.load('sprites/L9E.png'), 
+    pygame.image.load('sprites/L10E.png'), pygame.image.load('sprites/L11E.png')]
+
+    def __init__(self, x, y, width, height, end):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.end = end
+        self.path = [self.x, self.end]
+        self.walkCount = 0
+        self.vel = 3
+
+    def draw(self, win):
+        self.move()
+        if self.walkCount + 1 >= 33:
+            self.walkCount = 0
+
+        if self.vel > 0:
+            win.blit(self.walkRight[self.walkCount // 3], (self.x, self.y))
+            self.walkCount += 1
+        else:
+            win.blit(self.walkLeft[self.walkCount // 3], (self.x, self.y))
+            self.walkCount += 1
+
+    def move(self):
+        if self.vel > 0:
+            if self.x + self.vel < self.path[1]:
+                self.x += self.vel
+            else:
+                self.vel = self.vel * -1
+                self.walkCount = 0
+        else:
+            if self.x - self.vel > self.path[0]:
+                self.x += self.vel
+            else:
+                self.vel = self.vel * -1
+                self.walkCount = 0
+
 # class for bullets
 class projectile(object):
     def __init__(self, x, y, radius, color, facing):
@@ -102,6 +152,7 @@ class projectile(object):
 def redrawGameWindow():
     win.blit(bg, (0, 0))
     worm.draw(win)
+    goblin.draw(win)
     for bullet in bullets:
         bullet.draw(win)
 
@@ -109,6 +160,7 @@ def redrawGameWindow():
 
 # Main Loop:
 worm = player(WIN_WIDTH/3, ground, 64, 64)
+goblin = enemy(100, WIN_HEIGHT-64, 64,64, 450)
 bullets = []
 run = True
 while run:
