@@ -10,6 +10,7 @@ WIN_HEIGHT = 420
 WIN_WIDTH = 740
 
 win = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
+bg = pygame.image.load('sprites/moon_small.png')
 
 # Colours
 black = (0, 0, 0)
@@ -26,20 +27,19 @@ timeDelay = 50 #milliseconds
 timer = 0
 
 # Player sprites
-walkRight = [pygame.image.load('sprites/R1.png'), 
-pygame.image.load('sprites/R2.png'), pygame.image.load('sprites/R3.png'), 
-pygame.image.load('sprites/R4.png'), pygame.image.load('sprites/R5.png'), 
-pygame.image.load('sprites/R6.png'), pygame.image.load('sprites/R7.png'), 
-pygame.image.load('sprites/R8.png'), pygame.image.load('sprites/R9.png')]
+walkRight = [pygame.image.load('worm_sprites/R1.png'), 
+pygame.image.load('worm_sprites/R2.png'), pygame.image.load('worm_sprites/R3.png')]
 
-walkLeft = [pygame.image.load('sprites/L1.png'),
-pygame.image.load('sprites/L2.png'), pygame.image.load('sprites/L3.png'),
-pygame.image.load('sprites/L4.png'), pygame.image.load('sprites/L5.png'),
-pygame.image.load('sprites/L6.png'), pygame.image.load('sprites/L7.png'),
-pygame.image.load('sprites/L8.png'), pygame.image.load('sprites/L9.png')]
+walkLeft = [pygame.image.load('worm_sprites/L1.png'), 
+pygame.image.load('worm_sprites/L2.png'), pygame.image.load('worm_sprites/L3.png')]
 
-bg = pygame.image.load('sprites/moon_small.png')
-char = pygame.image.load('sprites/standing.png')
+standRight = [pygame.image.load('worm_sprites/R1.png'), pygame.image.load('worm_sprites/HR1.png'), 
+pygame.image.load('worm_sprites/HR2.png'), pygame.image.load('worm_sprites/HR1.png'), 
+pygame.image.load('worm_sprites/R1.png')]
+
+standLeft = [pygame.image.load('worm_sprites/L1.png'), pygame.image.load('worm_sprites/HL1.png'), 
+pygame.image.load('worm_sprites/HL2.png'), pygame.image.load('worm_sprites/HL1.png'), 
+pygame.image.load('worm_sprites/L1.png')]
 
 pygame.display.set_caption("Worm's Revenge")
 
@@ -56,10 +56,12 @@ class player(object):
         self.height = height
         self.vel = 5
         self.walkCount = 0
+        self.standCount = 0
         self.left = False
         self.right = True
         self.standing = True
-
+        self.hitbox = (self.x-7, self.y + 40, 80, 25)
+    
         # Jumping Variables
         self.isJump = False
         self.touchingSurface = True
@@ -67,8 +69,12 @@ class player(object):
 
     # draws the player
     def draw(self, win):
-        if self.walkCount + 1 >= 27:
+        # resets walk/stand count
+        if self.walkCount >= 9:
             self.walkCount = 0
+
+        if self.standCount >= 9:
+            self.standCount = 0
 
         # Controls walking animations
         if not(self.standing):
@@ -79,10 +85,14 @@ class player(object):
                 win.blit(walkRight[self.walkCount//3], (self.x, self.y))
                 self.walkCount += 1
         else:
-            if self.right:
-                win.blit(walkRight[0], (self.x, self.y))
+            if self.left:
+                win.blit(standLeft[self.standCount//3], (self.x, self.y))
+                self.standCount += 1
             else: 
-                win.blit(walkLeft[0], (self.x, self.y))
+                win.blit(standRight[self.standCount//3], (self.x, self.y))
+                self.standCount += 1
+        self.hitbox = (self.x-7, self.y + 40, 80, 25)
+        pygame.draw.rect(win, red, self.hitbox, 2)
 
 class enemy(object):
     walkRight = [pygame.image.load('sprites/R1E.png'),
@@ -107,6 +117,7 @@ class enemy(object):
         self.path = [self.x, self.end]
         self.walkCount = 0
         self.vel = 3
+        self.hitbox = (self.x + 20, self.y, 28, 60)
 
     def draw(self, win):
         self.move()
@@ -119,6 +130,9 @@ class enemy(object):
         else:
             win.blit(self.walkLeft[self.walkCount // 3], (self.x, self.y))
             self.walkCount += 1
+
+        self.hitbox = (self.x + 20, self.y, 28, 60)
+        pygame.draw.rect(win, red, self.hitbox, 2)
 
     def move(self):
         if self.vel > 0:
@@ -133,6 +147,9 @@ class enemy(object):
             else:
                 self.vel = self.vel * -1
                 self.walkCount = 0
+    
+    def hit(self):
+        print('hit')
 
 # class for bullets
 class projectile(object):
@@ -161,10 +178,17 @@ def redrawGameWindow():
 # Main Loop:
 worm = player(WIN_WIDTH/3, ground, 64, 64)
 goblin = enemy(100, WIN_HEIGHT-64, 64,64, 450)
+shootLoop = 0
 bullets = []
 run = True
 while run:
     clock.tick(27)
+
+    if shootLoop > 0:
+        shootLoop += 1
+    if shootLoop > 3:
+        shootLoop = 0
+
     pygame.time.delay(timeDelay)
 
     for event in pygame.event.get():
@@ -173,6 +197,13 @@ while run:
 
     # If a bullet goes offscreen, player can shoot more bullets
     for bullet in bullets:
+
+        # Checks if bullet falls within enemy hitbox
+        if bullet.y - bullet.radius < goblin.hitbox[1] + goblin.hitbox[3] and bullet.y + bullet.radius > goblin.hitbox[1]:
+            if bullet.x + bullet.radius > goblin.hitbox[0] and bullet.x - bullet.radius < goblin.hitbox[0] + goblin.hitbox[2]:
+                goblin.hit()
+                bullets.pop(bullets.index(bullet))
+
         if bullet.x < WIN_WIDTH and bullet.x > 0:
             bullet.x += bullet.vel
         else: 
@@ -182,12 +213,14 @@ while run:
     keys = pygame.key.get_pressed()
 
     # Code for shooting bullets
-    if keys[pygame.K_SPACE]:
+    if keys[pygame.K_SPACE] and shootLoop == 0:
         # Which way the worm is facing
         if worm.left:
             facing = -1
         else:
             facing = 1
+
+        shootLoop = 1
 
         # Caps the number of bullets
         if len(bullets) < 20:
